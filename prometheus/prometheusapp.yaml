@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus
+  namespace: argocd
+spec:
+  project: default
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+
+  source:
+    chart: kube-prometheus-stack
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: 78.2.1
+    helm:
+      releaseName: kube-prometheus-stack
+      valueFiles:
+        - values/values-prod.yaml
+
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      selfHeal: true
+      prune: true

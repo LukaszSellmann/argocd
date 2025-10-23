@@ -1,0 +1,67 @@
+grafana:
+  adminUser: admin
+  adminPassword: changeme
+  defaultDashboardsEnabled: true
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClassName: csi-rawfile-default
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - grafana.sellmann.pl
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.sellmann.pl
+
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: csi-rawfile-default
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - prometheus.sellmann.pl
+    tls:
+      - secretName: prometheus-tls
+        hosts:
+          - prometheus.sellmann.pl
+
+alertmanager:
+  alertmanagerSpec:
+    replicas: 1
+    retention: 120h
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: csi-rawfile-default
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - alertmanager.sellmann.pl
+    tls:
+      - secretName: alertmanager-tls
+        hosts:
+          - alertmanager.sellmann.pl
+
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
