@@ -16,10 +16,7 @@ spec:
     repoURL: "https://github.com/LukaszSellmann/argocd.git"
     chart:
     targetRevision: main
-    path: firstapp
-    helm:
-      valueFiles:
-        - values.yaml
+    path: monitoring-demo-app
 
   syncPolicy:
     syncOptions:
