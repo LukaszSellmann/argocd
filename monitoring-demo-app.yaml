@@ -12,12 +12,14 @@ spec:
     server: https://kubernetes.default.svc
     namespace: monitoring-demo-app
 
-  source:
+  sources:
     - repoURL: "https://github.com/LukaszSellmann/argocd.git"
-      chart: monitoring-demo-app
+      path: monitoring-demo-app
       targetRevision: main
       helm:
         releaseName: monitoring-demo-app
+        valueFiles:
+          - values.yaml
 
   syncPolicy:
     syncOptions:
