@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: monitoring-demo-app
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
 
@@ -11,9 +13,10 @@ spec:
     namespace: monitoring-demo-app
 
   source:
-    repoURL: https://github.com/LukaszSellmann/demo-app.git
+    repoURL: "https://github.com/LukaszSellmann/argocd.git"
+    chart:
     targetRevision: main
-    path: .
+    path: firstapp
     helm:
       valueFiles:
         - values.yaml

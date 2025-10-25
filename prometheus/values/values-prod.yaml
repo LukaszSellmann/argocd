@@ -1,11 +1,10 @@
 grafana:
-  adminUser: admin
-  adminPassword: changeme
-  defaultDashboardsEnabled: true
   persistence:
     enabled: true
     size: 5Gi
     storageClassName: csi-rawfile-default
+    accessModes:
+      - ReadWriteOnce
   ingress:
     enabled: true
     ingressClassName: nginx
@@ -39,8 +38,6 @@ prometheus:
 
 alertmanager:
   alertmanagerSpec:
-    replicas: 1
-    retention: 120h
     storage:
       volumeClaimTemplate:
         spec:
@@ -48,7 +45,7 @@ alertmanager:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 5Gi
+              storage: 5Gi # alerts data usually doesn’t need huge space
   ingress:
     enabled: true
     ingressClassName: nginx
@@ -58,10 +55,3 @@ alertmanager:
       - secretName: alertmanager-tls
         hosts:
           - alertmanager.sellmann.pl
-
-kubeControllerManager:
-  enabled: false
-kubeScheduler:
-  enabled: false
-kubeProxy:
-  enabled: false

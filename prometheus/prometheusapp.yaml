@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: prometheus
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
 
@@ -10,18 +12,21 @@ spec:
     server: https://kubernetes.default.svc
     namespace: observability
 
-  source:
-    chart: kube-prometheus-stack
-    repoURL: https://prometheus-community.github.io/helm-charts
-    targetRevision: 78.2.1
-    helm:
-      releaseName: kube-prometheus-stack
-      valueFiles:
-        - values/values-prod.yaml
+  sources:
+    - repoURL: "https://prometheus-community.github.io/helm-charts"
+      chart: kube-prometheus-stack
+      targetRevision: 78.2.1
+      helm:
+        releaseName: kube-prometheus-stack
+        valueFiles:
+          - $repo/prometheus/values/values-prod.yaml
+    - repoURL: "https://github.com/LukaszSellmann/argocd.git"
+      ref: repo
 
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
     automated:
       selfHeal: true
       prune: true
