@@ -1,32 +1,29 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: prometheus
+  name: vaultwarden
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: observability
+    namespace: vaultwarden
 
   sources:
-    - repoURL: "https://prometheus-community.github.io/helm-charts"
-      chart: kube-prometheus-stack
-      targetRevision: 78.2.1
+    - repoURL: https://guerzon.github.io/vaultwarden
+      chart: vaultwarden
+      targetRevision: 0.34.4
       helm:
-        releaseName: kube-prometheus-stack
+        releaseName: vaultwarden-release
         valueFiles:
-          - $repo/prometheus/values.yaml
+          - $repo/vaultwarden/values.yaml
     - repoURL: "https://github.com/LukaszSellmann/argocd.git"
       ref: repo
 
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
-      - ServerSideApply=true
     automated:
       selfHeal: true
       prune: true

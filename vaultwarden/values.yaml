@@ -1,0 +1,17 @@
+domain:
+  name: "https://vaultwarden.sellmann.pl"
+
+ingress:
+  enabled: "true"
+  hostname: "vaultwarden.sellmann.pl"
+service:
+  type: "LoadBalancer"
+storage:
+  data:
+    name: "vaultwarden-data"
+    size: "5Gi"
+    path: "/data"
+    accessMode: "ReadWriteOnce"
+replicas: "1"
+logging:
+  logLevel: "debug"
