@@ -13,14 +13,16 @@ spec:
     namespace: monitoring-demo-app
 
   source:
-    repoURL: "https://github.com/LukaszSellmann/argocd.git"
-    chart:
-    targetRevision: main
-    path: monitoring-demo-app
+    - repoURL: "https://github.com/LukaszSellmann/argocd.git"
+      chart: monitoring-demo-app
+      targetRevision: main
+      helm:
+        releaseName: monitoring-demo-app
 
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
     automated:
       selfHeal: true
       prune: true
