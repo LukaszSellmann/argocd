@@ -1,6 +1,9 @@
 domain: "https://vaultwarden.sellmann.pl"
 ingress:
   enabled: "true"
+  class: "nginx"
+  path: "/"
+  tls: "true"
   hostname: "vaultwarden.sellmann.pl"
 service:
   type: "LoadBalancer"
