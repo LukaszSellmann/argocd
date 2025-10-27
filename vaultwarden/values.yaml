@@ -6,7 +6,7 @@ ingress:
   tls: "true"
   hostname: "vaultwarden.sellmann.pl"
 service:
-  type: "LoadBalancer"
+  type: "ClusterIP"
 storage:
   data:
     name: "vaultwarden-data"
