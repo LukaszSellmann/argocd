@@ -1,0 +1,268 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: microk8s-node
+    username: user
+    password: "$6$rounds=$6$rounds=656000$0FEz92fy0/jHLi1f$yvhpS8YnQmWShk0PVdY0Apf0sp0lNhtGw4IkmNGl4mOinlz0vlXWcehxsbj0pAKK2rGlWlzWLeP2KiDdVE9fQ1"  # replace with hashed password or use SSH keys
+  packages:
+    - auditd
+    - audispd-plugins
+    - apparmor
+    - apparmor-utils
+    - lvm2
+  storage:
+    layout:
+      name: lvm
+    config:
+      - id: disk0
+        type: disk
+        match:
+          size: largest
+        ptable: gpt
+        wipe: superblock-recursive
+        preserve: false
+        name: sda
+        grub_device: true
+
+      # /boot - outside LVM
+      - id: boot-part
+        type: partition
+        device: disk0
+        size: 1G
+        wipe: superblock
+        flag: boot
+
+      - id: boot-fs
+        type: format
+        fstype: ext4
+        volume: boot-part
+
+      - id: boot-mount
+        type: mount
+        path: /boot
+        device: boot-fs
+        options: [nodev,nosuid]
+
+      # LVM partition for rest of disk
+      - id: lvm-part
+        type: partition
+        device: disk0
+        size: -1
+        wipe: superblock
+
+      - id: lvm-pv
+        type: lvm_volgroup
+        name: vg0
+        devices: [lvm-part]
+
+      # Logical Volumes (sizes tuned for 250GB drive)
+      - id: lv-root
+        type: lvm_partition
+        volgroup: vg0
+        size: 40G
+        name: root
+      - id: lv-home
+        type: lvm_partition
+        volgroup: vg0
+        size: 20G
+        name: home
+      - id: lv-tmp
+        type: lvm_partition
+        volgroup: vg0
+        size: 4G
+        name: tmp
+      - id: lv-var
+        type: lvm_partition
+        volgroup: vg0
+        size: 60G
+        name: var
+      - id: lv-varlog
+        type: lvm_partition
+        volgroup: vg0
+        size: 10G
+        name: varlog
+      - id: lv-audit
+        type: lvm_partition
+        volgroup: vg0
+        size: 4G
+        name: audit
+      - id: lv-microk8s
+        type: lvm_partition
+        volgroup: vg0
+        size: 30G
+        name: microk8s
+      - id: lv-containerd
+        type: lvm_partition
+        volgroup: vg0
+        size: -1
+        name: containerd
+
+      # Filesystems
+      - id: fs-root
+        type: format
+        fstype: ext4
+        volume: lv-root
+      - id: fs-home
+        type: format
+        fstype: ext4
+        volume: lv-home
+      - id: fs-tmp
+        type: format
+        fstype: ext4
+        volume: lv-tmp
+      - id: fs-var
+        type: format
+        fstype: ext4
+        volume: lv-var
+      - id: fs-varlog
+        type: format
+        fstype: ext4
+        volume: lv-varlog
+      - id: fs-audit
+        type: format
+        fstype: ext4
+        volume: lv-audit
+      - id: fs-microk8s
+        type: format
+        fstype: ext4
+        volume: lv-microk8s
+      - id: fs-containerd
+        type: format
+        fstype: ext4
+        volume: lv-containerd
+
+      # Mounts with CIS mount options
+      - id: mnt-root
+        type: mount
+        path: /
+        device: fs-root
+      - id: mnt-home
+        type: mount
+        path: /home
+        device: fs-home
+        options: [nodev]
+      - id: mnt-tmp
+        type: mount
+        path: /tmp
+        device: fs-tmp
+        options: [nodev,nosuid,noexec]
+      - id: mnt-var
+        type: mount
+        path: /var
+        device: fs-var
+        options: [nosuid]
+      - id: mnt-varlog
+        type: mount
+        path: /var/log
+        device: fs-varlog
+        options: [nodev,noexec,nosuid]
+      - id: mnt-audit
+        type: mount
+        path: /var/log/audit
+        device: fs-audit
+        options: [nodev,noexec,nosuid]
+      - id: mnt-microk8s
+        type: mount
+        path: /var/snap/microk8s
+        device: fs-microk8s
+        options: [nosuid]
+      - id: mnt-containerd
+        type: mount
+        path: /var/lib/containerd
+        device: fs-containerd
+        options: [nosuid]
+
+  late-commands:
+    # Ensure package lists are fresh and required packages are present in the installed system
+    - curtin in-target --target=/target -- bash -c "apt-get update || true"
+    - curtin in-target --target=/target -- bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends auditd audispd-plugins apparmor apparmor-utils lvm2"
+    #
+    # Auditd baseline rules (CIS-style minimal baseline)
+    - curtin in-target --target=/target -- bash -c "cat > /etc/audit/rules.d/cis.rules <<'AUDIT_RULES'
+# Auditd rules - CIS baseline examples
+## First rule - delete all
+-D
+## Increase the buffer size
+-b 8192
+
+## Monitor changes to passwd, group, shadow, gshadow
+-w /etc/passwd -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/sudoers -p wa -k actions
+-w /etc/sudoers.d -p wa -k actions
+
+## Monitor file deletion in /var/log
+-w /var/log/ -p wa -k logins
+
+## Monitor /var/log/audit
+-w /var/log/audit/ -p wa -k auditlog
+
+## Monitor changes to network config and sysctl
+-w /etc/hosts -p wa -k network
+-w /etc/network/ -p wa -k network
+-w /etc/sysctl.conf -p wa -k sysctl
+
+## Monitor loadable modules
+-w /sbin/insmod -p x -k modules
+-w /sbin/rmmod -p x -k modules
+-w /sbin/modprobe -p x -k modules
+
+## Monitor important directories
+-w /etc/ -p wa -k etc_changes
+
+## Monitor successful/failed authorization attempts
+-w /var/log/auth.log -p wa -k auth
+
+## Audit system call rules (login, exec, mount, adjtimex)
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -S clock_settime -k time-change
+-a always,exit -F arch=b64 -S sethostname -S setdomainname -k system-locale
+-a always,exit -F arch=b64 -S mount -k mounts
+-a always,exit -F arch=b64 -S umount2 -k mounts
+
+## Keep the logon events
+-w /var/log/faillog -p wa -k logins
+-w /var/log/lastlog -p wa -k logins
+
+AUDIT_RULES"
+    - curtin in-target --target=/target -- bash -c "chmod 0640 /etc/audit/rules.d/cis.rules || true"
+    - curtin in-target --target=/target -- systemctl enable auditd
+    - curtin in-target --target=/target -- systemctl restart auditd || true
+
+    #
+    # AppArmor: ensure profiles present and set enforcing
+    - curtin in-target --target=/target -- bash -c "aa-status || true"
+    - curtin in-target --target=/target -- bash -c "apparmor_parser -r /etc/apparmor.d/* || true"
+    - curtin in-target --target=/target -- bash -c "systemctl enable apparmor"
+    - curtin in-target --target=/target -- bash -c "systemctl start apparmor || true"
+    - curtin in-target --target=/target -- bash -c "aa-enforce /etc/apparmor.d/* || true"
+
+    #
+    # sysctl hardening (some common CIS kernel settings useful for servers)
+    - curtin in-target --target=/target -- bash -c "cat > /etc/sysctl.d/60-cis.conf <<'SYSCTL'
+# Network
+net.ipv4.ip_forward = 0
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+
+# IPv6
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv6.conf.default.accept_redirects = 0
+
+# ICMP
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+SYSCTL"
+    - curtin in-target --target=/target -- bash -c "sysctl --system || true"
+
+    #
+    # Mark system as no-swap (ensure fstab has no swap entries)
+    - curtin in-target --target=/target -- bash -c "sed -i '/swap/d' /target/etc/fstab || true"
+
+    #
+    # Final: ensure LVM metadata is ok and update initramfs (so LVM mounts available)
+    - curtin in-target --target=/target -- bash -c "update-initramfs -u || true"
+    - curtin in-target --target=/target -- bash -c "vgchange -ay || true"
