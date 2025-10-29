@@ -12,6 +12,11 @@ spec:
       maxUnavailable: 1
       maxSurge: 1
   replicas: {{ .Values.replicaCount }}
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas
   selector:
     matchLabels:
       app.kubernetes.io/instance: {{ .Chart.Name }}
