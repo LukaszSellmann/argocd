@@ -1,0 +1,38 @@
+replicaCount: 1
+
+ollama:
+  gpu:
+    enabled: false
+  models:
+    pull:
+      - llama3.2:1b"
+
+service:
+  type: ClusterIP
+  port: 11434
+
+ingress:
+  enabled: "true"
+  class: "nginx"
+  path: "/"
+  tls: "true"
+  hostname: "ollama.sellmann.pl"
+
+persistentVolume:
+  enabled: true
+  size: 30Gi
+  storageClass: csi-rawfile-default
+
+resources:
+  limits:
+    cpu: "4"
+    memory: "8Gi"
+  requests:
+    cpu: "1"
+    memory: "2Gi"
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
