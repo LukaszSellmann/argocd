@@ -1,0 +1,36 @@
+replicaCount: 1
+
+ollama:
+  enabled: false
+ollamaUrls:
+  - "http://ollama-release.ollama.svc.cluster.local:11434"
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  class: "nginx"
+  host: "openwebui.sellmann.pl"
+  tls: true
+
+persistence:
+  enabled: true
+  size: 5Gi
+  provider: local
+  storageClass: csi-rawfile-default
+
+resources:
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+  requests:
+    cpu: "1"
+    memory: "1Gi"
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

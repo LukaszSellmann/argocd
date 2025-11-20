@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ollama
+  name: openwebui
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -10,16 +10,16 @@ spec:
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: ollama
+    namespace: openwebui
 
   sources:
-    - repoURL: https://helm.otwld.com/
-      chart: ollama
-      targetRevision: 1.34.0
+    - repoURL: https://helm.openwebui.com/
+      chart: open-webui
+      targetRevision: 8.14.0
       helm:
-        releaseName: ollama-release
+        releaseName: openwebui-release
         valueFiles:
-          - $repo/ollama/values.yaml
+          - $repo/openwebui/values.yaml
     - repoURL: "https://github.com/LukaszSellmann/argocd.git"
       ref: repo
 
