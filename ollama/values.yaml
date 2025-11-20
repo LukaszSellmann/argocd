@@ -12,11 +12,11 @@ service:
   port: 11434
 
 ingress:
-  enabled: "true"
-  class: "nginx"
-  path: "/"
-  tls: "true"
-  hostname: "ollama.sellmann.pl"
+  enabled: true
+  className: "nginx"
+  hosts[0].paths[0].path: "/"
+  hosts[0].paths[0].pathType: "Prefix"
+  hosts[0].host: "ollama.sellmann.pl"
 
 persistentVolume:
   enabled: true
