@@ -28,7 +28,7 @@ scaller:
 
 ingress:
   ingressClassName: nginx
-  host: mondemo.sellmann.pl
+  host: mondemo.zdupy.eu
   path: /
   pathtype: Prefix
   portnumber: 80
